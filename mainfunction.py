@@ -188,8 +188,10 @@ def sniff_packets():
     
 def solve_tcpstreams():   #select the tcp stream /print the tcp stream /send as json
    ####################################################
-   #TCP_stream:
-   #[ stream1,stream2,stream3]
+   # this is the thread for extensive analysis 
+   # TCP_stream's format like this:
+   # [stream1,stream2,stream3]
+   # each stream is a {} contains some information of the TCP,like src (ip,port) and dst(ip,port) and so on. use them like stream['src']
    ####################################################
    global program_exit,threadLock1
    while(1):
@@ -197,7 +199,7 @@ def solve_tcpstreams():   #select the tcp stream /print the tcp stream /send as 
       
       
       if len(TCP_stream)>0:
-         print '==============================================='
+         print '==============================================='  
          for i in TCP_stream.pop(0):
             print i
       
