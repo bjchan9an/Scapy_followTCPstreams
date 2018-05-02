@@ -11,7 +11,7 @@ TCP_stream_buf=[]  #just a buffer for the real tcp_stream
 TCP_stream=[]
 
 threadLock1=threading.Lock()   #lock for the list TCP_stream
-threadLock2=threading.Lock()
+#threadLock2=threading.Lock()
 program_exit=0
 
 
@@ -81,19 +81,19 @@ class MyAnalyze:
            message_state='NO DATA'
            self.result['RAW Message']=message_state
 
-       
+        '''
         for i in TCP_stream_buf:
            if len(i)>0:
-              if dpkt.time- i[-1]['time']>6:
+              if dpkt.time- i[-1]['time']>2: #recognize tcp streams based on time
                  print 'add to list!'
                  TCP_stream_buf.remove(i)
-                 '''set the lock'''
+                 #set the lock
                  threadLock1.acquire()
                  
                  TCP_stream.append(i)
                  
-                 '''remove the lock'''
-                 threadLock1.release()
+                 #remove the lock
+                 threadLock1.release()'''
                    
         
         if TCP_flags==0b000010:#TCP_flags & 0b000010== 0b000010:  #'SYN ':  
@@ -182,7 +182,7 @@ def save_packet(dpkt):
 def sniff_packets():
    global program_exit
    test=MyAnalyze()       
-   dpkt_list=sniff(filter='tcp',iface="ens33",count=70,prn=test.analy_Ether)  #prn define the call back function
+   dpkt_list=sniff(filter='tcp',iface="ens33",count=800,prn=test.analy_Ether)  #prn define the call back function
    program_exit=1
    thread.exit()
     
@@ -197,7 +197,6 @@ def solve_tcpstreams():   #select the tcp stream /print the tcp stream /send as 
    while(1):
       threadLock1.acquire()#mutex
       
-      
       if len(TCP_stream)>0:
          print '==============================================='  
          for i in TCP_stream.pop(0):
@@ -207,15 +206,37 @@ def solve_tcpstreams():   #select the tcp stream /print the tcp stream /send as 
       if program_exit==1:
          program_exit=2
          break
-      
+        
    thread.exit()
 
+def recog_finished_tcp():
+   global program_exit,threadLock1
+   while(1):
+      tmp=TCP_stream_buf
+      for i in tmp:
+         if len(i)>0:
+              if time.time()-i[-1]['time']>1: #recognize tcp streams based on time
+                 print 'add to list!'
+                 TCP_stream_buf.remove(i)
+                 #set the lock
+                 threadLock1.acquire()
+                 
+                 TCP_stream.append(i)
+                 
+                 #remove the lock
+                 threadLock1.release()
+
+      time.sleep(2)
+      if program_exit==1:
+         break
+   thread.exit() 
 
 if __name__ == '__main__':
 
    try:
       thread.start_new_thread(sniff_packets,())
       thread.start_new_thread(solve_tcpstreams,())
+      thread.start_new_thread(recog_finished_tcp,())
    except:
       print "Error: unable tot start thread"
    while(1):
